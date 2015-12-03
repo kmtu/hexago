@@ -1,9 +1,9 @@
 class Board():
     def __init__(self, size):
-        self.data = [[0 for i in range(size[0])] for i in range(size[1])]
+        self.data = [[0 for i in range(size[1])] for i in range(size[0])]
 
     def draw(self):
-        pass
+        print(self.data)
 
     def put(player, position):
         pass
@@ -14,11 +14,12 @@ class Game():
         self.board = Board(size)
 
     def run(self):
-        pass
+        print('dlrow olleH')
+        self.board.draw()
 
 
 def main():
-    size = (19, 19)
+    size = (15, 19)
     game = Game(size)
     game.run()
 
