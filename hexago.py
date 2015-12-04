@@ -53,13 +53,19 @@ class Board():
     def draw(self):
         for i, row in enumerate(self.table):
             if i == 0:
+                # top line for the first row
                 print(*(['┌'] + ['───┬' for i in self.table[0][:-1]] +
                         ['───┐']), sep='')
+
+            # print the pieces
             print('│ ' + ' │ '.join(row) + ' │')
+
             if i == len(self.table) - 1:
+                # bottom line for the last row
                 print(*(['└'] + ['───┴' for i in self.table[0][:-1]] +
                         ['───┘']), sep='')
             else:
+                # bottom line for the middle rows
                 print('├─' + '─┼─'.join(['─' for j in row]) + '─┤')
 
     def move(self, move):
@@ -105,7 +111,10 @@ class Game():
                 current_player.name, current_player.symbol))
             valid_input = False
             while not valid_input:
-                line = input("Please input two numbers (row column): ")
+                try:
+                    line = input("Please input two numbers (row column): ")
+                except EOFError:
+                    continue
 
                 # http://stackoverflow.com/questions/4998629/python-split-string-with-multiple-delimiters
                 pos = re.split(' |,', line)
