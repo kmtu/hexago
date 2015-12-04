@@ -12,11 +12,17 @@ class Player():
 class Board():
     def __init__(self, size):
         self.size = size
-        self.table = [['_' for i in range(size[1])] for i in range(size[0])]
+        self.table = [[' ' for i in range(size[1])] for i in range(size[0])]
 
     def draw(self):
-        for row in self.table:
-            print(row)
+        for i, row in enumerate(self.table):
+            if i == 0:
+                print(*(['┌'] + ['───┬' for i in self.table[0][:-1]] + ['───┐']), sep='')
+            print('│ ' + ' │ '.join(row) + ' │')
+            if i == len(self.table) - 1:
+                print(*(['└'] + ['───┴' for i in self.table[0][:-1]] + ['───┘']), sep='')
+            else:
+                print('├─' + '─┼─'.join(['─' for j in row]) + '─┤')
 
     def put(self, player, position):
         self.table[position[0]][position[1]] = player.symbol
@@ -26,7 +32,7 @@ class Game():
     def __init__(self, size):
         self.board = Board(size)
         self.gameover = False
-        self.players = [Player('One', 'A'), Player('Two', 'B')]
+        self.players = [Player('One', '@'), Player('Two', 'O')]
         self.current_player_id = 0
 
     def run(self):
@@ -37,7 +43,7 @@ class Game():
             os.system('cls' if os.name == 'nt' else 'clear')
 
             # draw the board
-            print('dlrow olleH')
+            print('dlrow olleH\n')
             self.board.draw()
 
             # ask for move
