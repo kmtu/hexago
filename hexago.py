@@ -3,6 +3,7 @@ import re
 import sys
 from enum import Enum
 
+
 class Move():
     class Type(Enum):
         place = 'place'
@@ -52,16 +53,16 @@ class Board():
     def draw(self):
         for i, row in enumerate(self.table):
             if i == 0:
-                print(*(['┌'] + ['───┬' for i in self.table[0][:-1]] + ['───┐']), sep='')
+                print(*(['┌'] + ['───┬' for i in self.table[0][:-1]] +
+                        ['───┐']), sep='')
             print('│ ' + ' │ '.join(row) + ' │')
             if i == len(self.table) - 1:
-                print(*(['└'] + ['───┴' for i in self.table[0][:-1]] + ['───┘']), sep='')
+                print(*(['└'] + ['───┴' for i in self.table[0][:-1]] +
+                        ['───┘']), sep='')
             else:
                 print('├─' + '─┼─'.join(['─' for j in row]) + '─┤')
 
-
     def move(self, move):
-        player = move.player
         if move.type is Move.Type.place:
             self.place(move)
         elif move.type is Move.Type.shift:
@@ -78,6 +79,7 @@ class Board():
         line = move.line
         side = move.side
         displace = move.displace
+        # TODO
 
 
 class Game():
