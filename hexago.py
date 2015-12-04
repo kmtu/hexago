@@ -2,6 +2,8 @@ import os
 import re
 import sys
 from enum import Enum
+import string
+import itertools
 
 
 class Move():
@@ -46,27 +48,45 @@ class Player():
 
 
 class Board():
+    coord_alphabet = (list(string.ascii_uppercase) +
+                      [''.join(c) for c in itertools.product(
+                       string.ascii_uppercase, repeat=2)] +
+                      [''.join(c) for c in itertools.product(
+                       string.ascii_uppercase, repeat=3)])
+
     def __init__(self, size):
         self.size = size
         self.table = [[' ' for i in range(size[1])] for i in range(size[0])]
 
     def draw(self):
+        offset = 3
         for i, row in enumerate(self.table):
             if i == 0:
+                # column line coordinates
+                print(' ' * (offset * 2 + 3) + ' '.join(
+                    ['{:^3}'.format(j) for j in
+                        Board.coord_alphabet[:len(row)-1]]))
+
+                # column piece coordinates
+                print(' ' * (offset * 2 + 1) + '│'.join(
+                    ['{:^3d}'.format(j) for j in range(len(row))]))
+
                 # top line for the first row
-                print(*(['┌'] + ['───┬' for i in self.table[0][:-1]] +
-                        ['───┐']), sep='')
+                print(' ' * offset * 2 +
+                      '┌' + '───┬' * (len(row) - 1) + '───┐')
 
             # print the pieces
-            print('│ ' + ' │ '.join(row) + ' │')
+            print(' ' * offset + '{:^3d}'.format(i) +
+                  '│ ' + ' │ '.join(row) + ' │')
 
             if i == len(self.table) - 1:
                 # bottom line for the last row
-                print(*(['└'] + ['───┴' for i in self.table[0][:-1]] +
-                        ['───┘']), sep='')
+                print(' ' * offset * 2 +
+                      '└' + '───┴' * (len(row) - 1) + '───┘')
             else:
                 # bottom line for the middle rows
-                print('├─' + '─┼─'.join(['─' for j in row]) + '─┤')
+                print('{:^3}'.format(Board.coord_alphabet[i]) + '───' +
+                      '├' + '───┼' * (len(row) - 1) + '───┤')
 
     def move(self, move):
         if move.type is Move.Type.place:
@@ -147,7 +167,7 @@ class Game():
 
 
 def main():
-    size = (5, 5)
+    size = (15, 15)
     game = Game(size)
     game.run()
 
