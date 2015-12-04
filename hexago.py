@@ -1,33 +1,37 @@
 import os
 import re
+import sys
+
+
+class Player():
+    def __init__(self, name, symbol):
+        self.name = name
+        self.symbol = symbol
 
 
 class Board():
     def __init__(self, size):
-        self.table = [[0 for i in range(size[1])] for i in range(size[0])]
+        self.size = size
+        self.table = [['_' for i in range(size[1])] for i in range(size[0])]
 
     def draw(self):
         for row in self.table:
             print(row)
 
     def put(self, player, position):
-        self.table[position[0]][position[1]] = player
+        self.table[position[0]][position[1]] = player.symbol
 
 
 class Game():
     def __init__(self, size):
         self.board = Board(size)
         self.gameover = False
-        self.winner = None
-        self.current_player = 2
+        self.players = [Player('One', 'A'), Player('Two', 'B')]
+        self.current_player_id = 0
 
     def run(self):
         while not self.gameover:
-            # swap the player 1 -> 2, 2 -> 1
-            self.current_player += 1
-            if self.current_player > 2:
-                self.current_player = 1
-
+            current_player = self.players[self.current_player_id]
             # clear the screen
             # http://stackoverflow.com/questions/2084508/clear-terminal-in-python
             os.system('cls' if os.name == 'nt' else 'clear')
@@ -37,7 +41,8 @@ class Game():
             self.board.draw()
 
             # ask for move
-            print("\nPlayer {}'s turn".format(self.current_player))
+            print("\nPlayer {}'s turn (symbol {})".format(
+                current_player.name, current_player.symbol))
             valid_input = False
             while not valid_input:
                 line = input("Please input two numbers (row column): ")
@@ -45,22 +50,35 @@ class Game():
                 # http://stackoverflow.com/questions/4998629/python-split-string-with-multiple-delimiters
                 pos = re.split(' |,', line)
 
-                # remove empty strings in the list and take only the first two
-                # and make them become integers
                 try:
+                    # remove empty strings in the list, take only the first two
+                    # and make them become integers
                     pos = [int(p) for p in pos if p is not ''][:2]
                 except ValueError:
-                    valid_input = False
+                    if pos[0] == 'q':
+                        sys.exit()
+                    else:
+                        print("Invalid input!")
                 else:
-                    valid_input = True
+                    if len(pos) == 2 and all(
+                            p >= 0 and p < self.board.size[i]
+                            for i, p in enumerate(pos)):
+                        valid_input = True
+                    else:
+                        print("Invalid input!")
 
-            self.board.put(self.current_player, pos)
+            self.board.put(current_player, pos)
 
-        print("The winner is: Player {}".format(self.winner))
+            # change to next player
+            self.current_player_id += 1
+            if self.current_player_id >= len(self.players):
+                self.current_player_id = 0
+
+        print("The winner is ...")
 
 
 def main():
-    size = (15, 19)
+    size = (5, 5)
     game = Game(size)
     game.run()
 
