@@ -6,12 +6,18 @@ import string
 import itertools
 
 
+class Error(Exception):
+    pass
+
+
 class Move():
     class Type(Enum):
         place = 'place'
         shift = 'shift'
 
     def __init__(self, type, player):
+        if type not in Move.Type:
+            raise Error("Wrong move type: {}".format(type))
         self.type = type
         self.player = player
 
@@ -33,7 +39,7 @@ class Shift(Move):
         positive = '+'
         negative = '-'
 
-    def __init__(self, player, direction, line, side, displace):
+    def __init__(self, player, direction, side, line, displace):
         super().__init__(Move.Type.shift, player)
         self.direction = direction
         self.line = line
@@ -97,15 +103,19 @@ class Board():
     def place(self, move):
         player = move.player
         pos = move.position
-        self.table[pos[0]][pos[1]] = player.symbol
+        try:
+            self.table[pos[0]][pos[1]] = player.symbol
+        except IndexError:
+            raise Error("Invalid place position: ", pos)
 
     def shift(self, move):
-        player = move.player
-        direction = move.direction
-        line = move.line
-        side = move.side
-        displace = move.displace
         # TODO
+        # player = move.player
+        # direction = move.direction
+        # line = move.line
+        # side = move.side
+        # displace = move.displace
+        raise Error("Shift has not been implemented, yet")
 
 
 class Game():
@@ -129,34 +139,43 @@ class Game():
             # ask for move
             print("\nPlayer {}'s turn (symbol {})".format(
                 current_player.name, current_player.symbol))
-            valid_input = False
-            while not valid_input:
+            while True:
                 try:
-                    line = input("Please input two numbers (row column): ")
+                    line = input("Please input your move: ")
                 except EOFError:
                     continue
 
-                # http://stackoverflow.com/questions/4998629/python-split-string-with-multiple-delimiters
-                pos = re.split(' |,', line)
+                # check for special commands
+                if re.search('quit', line):
+                    sys.exit()
 
-                try:
-                    # remove empty strings in the list, take only the first two
-                    # and make them become integers
-                    pos = [int(p) for p in pos if p is not ''][:2]
-                except ValueError:
-                    if pos[0] == 'q':
-                        sys.exit()
-                    else:
-                        print("Invalid input!")
-                else:
-                    if len(pos) == 2 and all(
-                            p >= 0 and p < self.board.size[i]
-                            for i, p in enumerate(pos)):
-                        valid_input = True
-                    else:
-                        print("Invalid input!")
+                # initialize move
+                move = None
 
-            self.board.move(Place(current_player, pos))
+                # replace all commas with spaces
+                line = re.sub(',', ' ', line)
+
+                # check if input is a Place
+                match = re.search('^\s*([0-9]+)\s+([0-9]+)', line)
+                if match:
+                    position = [int(m) for m in match.groups()]
+                    move = Place(current_player, position)
+
+                # check if input is a Shift
+                # [direction][side][line]\s*[displace]
+                match = re.search(
+                        '^\s*([\^v<>])([+-])([A-Z]+)\s*([+-]?[1-9][0-9]*)', line)
+                if match:
+                    move = Shift(current_player, *match.groups())
+
+                if move is not None:
+                    try:
+                        self.board.move(move)
+                    except Error as e:
+                        print(e)
+                        continue
+                    else:
+                        break
 
             # change to next player
             self.current_player_id += 1
