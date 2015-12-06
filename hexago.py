@@ -10,6 +10,10 @@ class Error(Exception):
     pass
 
 
+class IllegalMoveError(Error):
+    pass
+
+
 class Move():
     class Type(Enum):
         place = 'place'
@@ -54,6 +58,7 @@ class Player():
 
 
 class Board():
+    empty_symbol = ' '
     coord_alphabet = (list(string.ascii_uppercase) +
                       [''.join(c) for c in itertools.product(
                        string.ascii_uppercase, repeat=2)] +
@@ -62,7 +67,8 @@ class Board():
 
     def __init__(self, size):
         self.size = size
-        self.table = [[' ' for i in range(size[1])] for i in range(size[0])]
+        self.table = [[Board.empty_symbol for i in range(size[1])]
+                      for i in range(size[0])]
 
     def draw(self):
         offset = 3
@@ -104,9 +110,14 @@ class Board():
         player = move.player
         pos = move.position
         try:
-            self.table[pos[0]][pos[1]] = player.symbol
+            occupant = self.table[pos[0]][pos[1]]
         except IndexError:
             raise Error("Invalid place position: ", pos)
+
+        if occupant != Board.empty_symbol:
+            raise IllegalMoveError("Place has been occupied: ", pos)
+        else:
+            self.table[pos[0]][pos[1]] = player.symbol
 
     def shift(self, move):
         # TODO
@@ -153,7 +164,7 @@ class Game():
                 # check for special commands
                 if re.fullmatch('quit', line):
                     sys.exit()
-                elif re.fullmatch('clear', line):
+                elif re.fullmatch('c(lear)?', line):
                     self.draw_interface()
 
                 # initialize move
@@ -180,7 +191,7 @@ class Game():
                     try:
                         self.board.move(move)
                     except Error as e:
-                        print(e)
+                        print(*e.args)
                         continue
                     else:
                         break
