@@ -184,7 +184,7 @@ class Game():
 
                 # check if input is a list of numbers
                 match = re.fullmatch(
-                        '^\s*[0-9]+|(([0-9]+\s+)+([0-9]+)?)\s*', line)
+                        '^\s*([0-9]+|([0-9]+\s+)+([0-9]+)?)\s*', line)
                 if match:
                     position = [int(p) for p in line.split()]
                     num_pos = len(position)
