@@ -125,20 +125,25 @@ class Game():
         self.players = [Player('One', '@'), Player('Two', 'O')]
         self.current_player_id = 0
 
+    def clear_screen(self):
+        # clear the screen
+        # http://stackoverflow.com/questions/2084508/clear-terminal-in-python
+        os.system('cls' if os.name == 'nt' else 'clear')
+
+    def draw_interface(self):
+        current_player = self.players[self.current_player_id]
+        self.clear_screen()
+        print('dlrow olleH\n')
+        self.board.draw()
+        # ask for move
+        print("\nPlayer {}'s turn (symbol {})".format(
+            current_player.name, current_player.symbol))
+
     def run(self):
         while not self.gameover:
             current_player = self.players[self.current_player_id]
-            # clear the screen
-            # http://stackoverflow.com/questions/2084508/clear-terminal-in-python
-            os.system('cls' if os.name == 'nt' else 'clear')
+            self.draw_interface()
 
-            # draw the board
-            print('dlrow olleH\n')
-            self.board.draw()
-
-            # ask for move
-            print("\nPlayer {}'s turn (symbol {})".format(
-                current_player.name, current_player.symbol))
             while True:
                 try:
                     line = input("Please input your move: ")
@@ -146,8 +151,10 @@ class Game():
                     continue
 
                 # check for special commands
-                if re.search('quit', line):
+                if re.fullmatch('quit', line):
                     sys.exit()
+                elif re.fullmatch('clear', line):
+                    self.draw_interface()
 
                 # initialize move
                 move = None
@@ -156,15 +163,16 @@ class Game():
                 line = re.sub(',', ' ', line)
 
                 # check if input is a Place
-                match = re.search('^\s*([0-9]+)\s+([0-9]+)', line)
+                match = re.fullmatch('^\s*([0-9]+)\s+([0-9]+)', line)
                 if match:
                     position = [int(m) for m in match.groups()]
                     move = Place(current_player, position)
 
                 # check if input is a Shift
                 # [direction][side][line]\s*[displace]
-                match = re.search(
-                        '^\s*([\^v<>])([+-])([A-Z]+)\s*([+-]?[1-9][0-9]*)', line)
+                match = re.fullmatch(
+                        '^\s*([\^v<>])([+-])([A-Z]+)\s*([+-]?[1-9][0-9]*)',
+                        line)
                 if match:
                     move = Shift(current_player, *match.groups())
 
@@ -186,7 +194,7 @@ class Game():
 
 
 def main():
-    size = (15, 15)
+    size = (11, 11)
     game = Game(size)
     game.run()
 
