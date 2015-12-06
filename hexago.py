@@ -65,9 +65,14 @@ class Board():
                       [''.join(c) for c in itertools.product(
                        string.ascii_uppercase, repeat=3)])
 
-    def __init__(self, size):
-        self.table = [[Board.empty_symbol for i in range(size[1])]
-                      for i in range(size[0])]
+    def __init__(self, table):
+        self.table = table
+
+    @classmethod
+    def empty(cls, size):
+        table = [[Board.empty_symbol for i in range(size[1])]
+                 for i in range(size[0])]
+        return cls(table)
 
     def draw(self):
         offset = 3
@@ -99,7 +104,7 @@ class Board():
                 print('{:^3}'.format(Board.coord_alphabet[i]) + '───' +
                       '├' + '───┼' * (len(row) - 1) + '───┤')
 
-    def move(self, move):
+    def do(self, move):
         if move.type is Move.Type.place:
             self.verify_place(move)
             self.place(move)
@@ -137,10 +142,94 @@ class Board():
     def verify_shift(self, move):
         pass
 
+    def has_n_in_row(self, n, player):
+        for line_dir in Pattern.LineDirection:
+            if len(self.scan(Pattern.n_in_row(n, line_dir), player)) > 0:
+                return True
+        return False
+
+    def scan(self, pattern, player):
+        # TODO
+        board_size = (len(self.table), len(self.table[0]))
+        pattern_size = (len(pattern.table), len(pattern.table[0]))
+        match = []
+        if all([b >= p for b in board_size for p in pattern_size]):
+            for r in range(board_size[0] - pattern_size[0] + 1):
+                for c in range(board_size[1] - pattern_size[1] + 1):
+                    if self.sub_board((r, c), pattern_size).match(
+                            pattern, player):
+                        match.append((r, c))
+        return match
+
+    def sub_board(self, position, size):
+        table = [self.table[r+position[0]][position[1]:position[1]+size[1]]
+                 for r in range(size[0])]
+        return Board(table)
+
+    def match(self, pattern, player):
+        board_size = (len(self.table), len(self.table[0]))
+        pattern_size = (len(pattern.table), len(pattern.table[0]))
+        if board_size != pattern_size:
+            return False
+        else:
+            for r in range(board_size[0]):
+                for c in range(board_size[1]):
+                    if pattern.table[r][c] is Pattern.Symbol.any:
+                        continue
+                    else:
+                        if (pattern.table[r][c] is Pattern.Symbol.empty and
+                                self.table[r][c] != Board.empty_symbol):
+                            return False
+                        elif (pattern.table[r][c] is Pattern.Symbol.own and
+                                self.table[r][c] != player.symbol):
+                            return False
+                        elif (pattern.table[r][c] is Pattern.Symbol.others and
+                                (self.table[r][c] == Board.empty_symbol or
+                                 self.table[r][c] == player.symbol)):
+                            return False
+
+            return True
+
+
+class Pattern():
+    class Symbol(Enum):
+        any = '*'
+        empty = '_'
+        own = 0
+        others = '@'
+
+    class LineDirection(Enum):
+        horizontal = '-'
+        vertical = '|'
+        slash = '/'
+        backslash = '\\'
+
+    def __init__(self, table):
+        self.table = table
+
+    @classmethod
+    def n_in_row(cls, n, line_dir):
+        if line_dir is cls.LineDirection.horizontal:
+            pattern = [[cls.Symbol.own for i in range(n)]]
+        elif line_dir is cls.LineDirection.vertical:
+            pattern = [[cls.Symbol.own] for i in range(n)]
+        elif line_dir is cls.LineDirection.slash:
+            pattern = [[cls.Symbol.any for i in range(n)]
+                       for i in range(n)]
+            for i in range(n):
+                pattern[i][n-i-1] = cls.Symbol.own
+        elif line_dir is cls.LineDirection.backslash:
+            pattern = [[cls.Symbol.any for i in range(n)]
+                       for i in range(n)]
+            for i in range(n):
+                pattern[i][i] = cls.Symbol.own
+
+        return cls(pattern)
+
 
 class Game():
     def __init__(self, size):
-        self.board = Board(size)
+        self.board = Board.empty(size)
         self.gameover = False
         self.players = [Player('One', '@'), Player('Two', 'O')]
         self.current_player_id = 0
@@ -206,19 +295,25 @@ class Game():
 
                 if move is not None:
                     try:
-                        self.board.move(move)
+                        self.board.do(move)
                     except Error as e:
                         print(*e.args)
                         continue
                     else:
                         break
 
+            # check if game is over
+            for p in self.players:
+                if self.board.has_n_in_row(6, p):
+                    self.winner = p
+                    self.gameover = True
+
             # change to next player
             self.current_player_id += 1
             if self.current_player_id >= len(self.players):
                 self.current_player_id = 0
 
-        print("The winner is ...")
+        print("The winner is ... {}!".format(self.winner.name))
 
 
 def main():
