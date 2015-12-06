@@ -195,8 +195,11 @@ class Game():
 
                 # check if input is a Shift
                 # [direction][side][line]\s*[displace]
+                dirs = ''.join(d.value for d in Shift.Direction)
+                sides = ''.join(s.value for s in Shift.Side)
                 match = re.fullmatch(
-                        '^\s*([\^v<>])([+-])([A-Z]+)\s*([+-]?[1-9][0-9]*)',
+                        '^\s*([\\{}])([{}])([a-zA-Z]+)\s*'
+                        '([+-]?[1-9][0-9]*)'.format(dirs, sides),
                         line)
                 if match:
                     move = Shift(current_player, *match.groups())
