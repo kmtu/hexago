@@ -66,7 +66,6 @@ class Board():
                        string.ascii_uppercase, repeat=3)])
 
     def __init__(self, size):
-        self.size = size
         self.table = [[Board.empty_symbol for i in range(size[1])]
                       for i in range(size[0])]
 
@@ -102,22 +101,29 @@ class Board():
 
     def move(self, move):
         if move.type is Move.Type.place:
+            self.verify_place(move)
             self.place(move)
         elif move.type is Move.Type.shift:
+            self.verify_shift(move)
             self.shift(move)
 
-    def place(self, move):
-        player = move.player
-        pos = move.position
-        try:
-            occupant = self.table[pos[0]][pos[1]]
-        except IndexError:
-            raise Error("Invalid place position: ", pos)
+    def on_board(self, position):
+        if (any(p < 0 for p in position) or
+                position[0] >= len(self.table) or
+                position[1] >= len(self.table[0])):
+            return False
+        return True
 
-        if occupant != Board.empty_symbol:
-            raise IllegalMoveError("Place has been occupied: ", pos)
-        else:
-            self.table[pos[0]][pos[1]] = player.symbol
+    def verify_place(self, move):
+        for pos in move.position:
+            if not self.on_board(pos):
+                raise IllegalMoveError("Place out of board: ", pos)
+            if self.table[pos[0]][pos[1]] != Board.empty_symbol:
+                raise IllegalMoveError("Place has been occupied: ", pos)
+
+    def place(self, move):
+        for pos in move.position:
+            self.table[pos[0]][pos[1]] = move.player.symbol
 
     def shift(self, move):
         # TODO
@@ -127,6 +133,9 @@ class Board():
         # side = move.side
         # displace = move.displace
         raise Error("Shift has not been implemented, yet")
+
+    def verify_shift(self, move):
+        pass
 
 
 class Game():
@@ -173,11 +182,16 @@ class Game():
                 # replace all commas with spaces
                 line = re.sub(',', ' ', line)
 
-                # check if input is a Place
-                match = re.fullmatch('^\s*([0-9]+)\s+([0-9]+)', line)
+                # check if input is a list of numbers
+                match = re.fullmatch(
+                        '^\s*[0-9]+|(([0-9]+\s+)+([0-9]+)?)\s*', line)
                 if match:
-                    position = [int(m) for m in match.groups()]
-                    move = Place(current_player, position)
+                    position = [int(p) for p in line.split()]
+                    num_pos = len(position)
+                    if num_pos == 4:
+                        position = [(position[i], position[i+1])
+                                    for i in range(0, num_pos, 2)]
+                        move = Place(current_player, position)
 
                 # check if input is a Shift
                 # [direction][side][line]\s*[displace]
