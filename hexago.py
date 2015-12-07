@@ -149,6 +149,8 @@ class Board():
         return False
 
     def scan(self, pattern, player):
+        """Scan if pattern exists within board with player as owner
+        """
         # TODO
         board_size = (len(self.table), len(self.table[0]))
         pattern_size = (len(pattern.table), len(pattern.table[0]))
@@ -162,11 +164,15 @@ class Board():
         return match
 
     def sub_board(self, position, size):
+        """Create sub board at position with size
+        """
         table = [self.table[r+position[0]][position[1]:position[1]+size[1]]
                  for r in range(size[0])]
         return Board(table)
 
     def match(self, pattern, player):
+        """Test if board and pattern match exactly
+        """
         board_size = (len(self.table), len(self.table[0]))
         pattern_size = (len(pattern.table), len(pattern.table[0]))
         if board_size != pattern_size:
