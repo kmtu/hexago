@@ -125,6 +125,8 @@ class Board():
                 raise IllegalMoveError("Place out of board: ", pos)
             if self.table[pos[0]][pos[1]] != Board.empty_symbol:
                 raise IllegalMoveError("Place has been occupied: ", pos)
+        if len(move.position) != len(set(move.position)):
+            raise IllegalMoveError("Placing two pieces at the same spot is not allowed")
 
     def place(self, move):
         for pos in move.position:
