@@ -67,6 +67,7 @@ class Board():
 
     def __init__(self, table):
         self.table = table
+        self.size = (len(self.table), len(self.table[0]))
 
     @classmethod
     def empty(cls, size):
@@ -126,7 +127,8 @@ class Board():
             if self.table[pos[0]][pos[1]] != Board.empty_symbol:
                 raise IllegalMoveError("Place has been occupied: ", pos)
         if len(move.position) != len(set(move.position)):
-            raise IllegalMoveError("Placing two pieces at the same spot is not allowed")
+            raise IllegalMoveError(
+                    "Placing two pieces at the same spot is not allowed")
 
     def place(self, move):
         for pos in move.position:
@@ -154,13 +156,11 @@ class Board():
         """Scan if pattern exists within board with player as owner
         """
         # TODO
-        board_size = (len(self.table), len(self.table[0]))
-        pattern_size = (len(pattern.table), len(pattern.table[0]))
         match = []
-        if all([b >= p for b in board_size for p in pattern_size]):
-            for r in range(board_size[0] - pattern_size[0] + 1):
-                for c in range(board_size[1] - pattern_size[1] + 1):
-                    if self.sub_board((r, c), pattern_size).match(
+        if all([b >= p for b in self.size for p in pattern.size]):
+            for r in range(self.size[0] - pattern.size[0] + 1):
+                for c in range(self.size[1] - pattern.size[1] + 1):
+                    if self.sub_board((r, c), pattern.size).match(
                             pattern, player):
                         match.append((r, c))
         return match
@@ -175,13 +175,11 @@ class Board():
     def match(self, pattern, player):
         """Test if board and pattern match exactly
         """
-        board_size = (len(self.table), len(self.table[0]))
-        pattern_size = (len(pattern.table), len(pattern.table[0]))
-        if board_size != pattern_size:
+        if self.size != pattern.size:
             return False
         else:
-            for r in range(board_size[0]):
-                for c in range(board_size[1]):
+            for r in range(self.size[0]):
+                for c in range(self.size[1]):
                     if pattern.table[r][c] is Pattern.Symbol.any:
                         continue
                     else:
@@ -214,6 +212,7 @@ class Pattern():
 
     def __init__(self, table):
         self.table = table
+        self.size = (len(self.table), len(self.table[0]))
 
     @classmethod
     def n_in_row(cls, n, line_dir):
@@ -238,9 +237,17 @@ class Pattern():
 class Game():
     def __init__(self, size):
         self.board = Board.empty(size)
-        self.gameover = False
         self.players = [Player('One', '@'), Player('Two', 'O')]
         self.current_player_id = 0
+        self.gameover = False
+        self.winner = []
+
+    def reset(self):
+        self.board = Board.empty(self.board.size)
+        self.players = [Player('One', '@'), Player('Two', 'O')]
+        self.current_player_id = 0
+        self.gameover = False
+        self.winner = []
 
     def clear_screen(self):
         # clear the screen
@@ -252,76 +259,95 @@ class Game():
         self.clear_screen()
         print('dlrow olleH\n')
         self.board.draw()
-        # ask for move
-        print("\nPlayer {}'s turn (symbol {})".format(
-            current_player.name, current_player.symbol))
+        if self.gameover:
+            print("\nThe winner is ... {}!".format(
+                ' and '.join([w.name for w in self.winner])))
+        else:
+            # ask for move
+            print("\nPlayer {}'s turn (symbol {})".format(
+                current_player.name, current_player.symbol))
 
     def run(self):
-        while not self.gameover:
-            current_player = self.players[self.current_player_id]
-            self.draw_interface()
-
-            while True:
-                try:
-                    line = input("Please input your move: ")
-                except EOFError:
-                    continue
-
-                # check for special commands
-                if re.fullmatch('quit', line):
-                    sys.exit()
-                elif re.fullmatch('c(lear)?', line):
-                    self.draw_interface()
-
-                # initialize move
-                move = None
-
-                # replace all commas with spaces
-                line = re.sub(',', ' ', line)
-
-                # check if input is a list of numbers
-                match = re.fullmatch(
-                        '^\s*([0-9]+|([0-9]+\s+)+([0-9]+)?)\s*', line)
-                if match:
-                    position = [int(p) for p in line.split()]
-                    num_pos = len(position)
-                    if num_pos == 4:
-                        position = [(position[i], position[i+1])
-                                    for i in range(0, num_pos, 2)]
-                        move = Place(current_player, position)
-
-                # check if input is a Shift
-                # [direction][side][line]\s*[displace]
-                dirs = ''.join(d.value for d in Shift.Direction)
-                sides = ''.join(s.value for s in Shift.Side)
-                match = re.fullmatch(
-                        '^\s*([\\{}])([{}])([a-zA-Z]+)\s*'
-                        '([+-]?[1-9][0-9]*)'.format(dirs, sides),
-                        line)
-                if match:
-                    move = Shift(current_player, *match.groups())
-
-                if move is not None:
-                    try:
-                        self.board.do(move)
-                    except Error as e:
-                        print(*e.args)
-                        continue
-                    else:
-                        break
-
+        # main game loop
+        while True:
             # check if game is over
             for p in self.players:
                 if self.board.has_n_in_row(6, p):
-                    self.winner = p
-                    self.gameover = True
+                    self.winner.append(p)
+            if len(self.winner) > 0:
+                self.gameover = True
 
-            # change to next player
-            self.current_player_id += 1
-            if self.current_player_id >= len(self.players):
-                self.current_player_id = 0
+            current_player = self.players[self.current_player_id]
+            self.draw_interface()
 
-        print("The winner is ... {}!".format(self.winner.name))
+            # input processing
+            if self.gameover:
+                while True:
+                    try:
+                        line = input("Play again? ")
+                    except EOFError:
+                        continue
+
+                    # check for commands
+                    if re.fullmatch('n(o)?', line):
+                        sys.exit()
+                    elif re.fullmatch('y(es)?', line):
+                        self.reset()
+
+            else:
+                while True:
+                    try:
+                        line = input("Please input your move: ")
+                    except EOFError:
+                        continue
+
+                    # check for special commands
+                    if re.fullmatch('quit', line):
+                        sys.exit()
+                    elif re.fullmatch('c(lear)?', line):
+                        self.draw_interface()
+
+                    # initialize move
+                    move = None
+
+                    # replace all commas with spaces
+                    line = re.sub(',', ' ', line)
+
+                    # check if input is a list of numbers
+                    match = re.fullmatch(
+                            '^\s*([0-9]+|([0-9]+\s+)+([0-9]+)?)\s*', line)
+                    if match:
+                        position = [int(p) for p in line.split()]
+                        num_pos = len(position)
+                        if num_pos == 4:
+                            position = [(position[i], position[i+1])
+                                        for i in range(0, num_pos, 2)]
+                            move = Place(current_player, position)
+
+                    # check if input is a Shift
+                    # [direction][side][line]\s*[displace]
+                    dirs = ''.join(d.value for d in Shift.Direction)
+                    sides = ''.join(s.value for s in Shift.Side)
+                    match = re.fullmatch(
+                            '^\s*([\\{}])([{}])([a-zA-Z]+)\s*'
+                            '([+-]?[1-9][0-9]*)'.format(dirs, sides),
+                            line)
+                    if match:
+                        move = Shift(current_player, *match.groups())
+
+                    if move is not None:
+                        try:
+                            self.board.do(move)
+                        except Error as e:
+                            print(*e.args)
+                            continue
+                        else:
+                            break
+
+                # change to next player
+                self.current_player_id += 1
+                if self.current_player_id >= len(self.players):
+                    self.current_player_id = 0
 
 
 def main():
